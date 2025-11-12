@@ -5,20 +5,51 @@ interface MessageRendererProps {
   message: Message;
 }
 
+// Helper function to extract text from various content formats
+function extractText(content: any): string {
+  if (!content) return '';
+
+  // If content is a string, return it directly
+  if (typeof content === 'string') {
+    return content;
+  }
+
+  // If content is an array, extract text from each item
+  if (Array.isArray(content)) {
+    return content
+      .map(item => {
+        if (typeof item === 'string') return item;
+        if (item && typeof item === 'object' && 'text' in item) return item.text;
+        return '';
+      })
+      .filter(Boolean)
+      .join('\n');
+  }
+
+  // If content is an object with a text property
+  if (content && typeof content === 'object' && 'text' in content) {
+    return content.text;
+  }
+
+  // Fallback: stringify the content
+  return JSON.stringify(content);
+}
+
 export default function MessageRenderer({ message }: MessageRendererProps) {
   const [isExpanded, setIsExpanded] = useState(false);
 
   if (message.role === 'user') {
+    const userText = extractText(message.content);
     return (
       <div className="bg-gray-100 rounded-lg p-4 border border-gray-200">
         <div className="text-xs font-semibold text-gray-500 uppercase mb-2">User</div>
-        <div className="text-sm text-gray-800 whitespace-pre-wrap">{message.content}</div>
+        <div className="text-sm text-gray-800 whitespace-pre-wrap">{userText}</div>
       </div>
     );
   }
 
   if (message.type === 'reasoning') {
-    const reasoningText = message.content?.[0]?.text || '';
+    const reasoningText = extractText(message.content);
     const preview = reasoningText.substring(0, 200);
     const showToggle = reasoningText.length > 200;
 
@@ -79,10 +110,11 @@ export default function MessageRenderer({ message }: MessageRendererProps) {
   }
 
   if (message.role === 'assistant') {
+    const assistantText = extractText(message.content);
     return (
       <div className="bg-white rounded-lg p-4 border border-gray-300">
         <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Assistant</div>
-        <div className="text-sm text-gray-800 whitespace-pre-wrap">{message.content}</div>
+        <div className="text-sm text-gray-800 whitespace-pre-wrap">{assistantText}</div>
       </div>
     );
   }
