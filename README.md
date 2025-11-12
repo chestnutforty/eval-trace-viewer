@@ -152,54 +152,6 @@ curl -X POST http://localhost:8001/api/evals/ingest \
   -d '{"file_paths": ["../results/file1.json"]}'
 ```
 
-**Option 3: Web UI** (coming soon)
-The frontend will include an "Import Results" button to trigger ingestion from the UI.
-
-## Usage
-
-### 1. View Evaluation Runs
-
-- Navigate to the home page (`/`)
-- See all imported evaluation runs in a table
-- Click any row to view samples for that evaluation
-
-### 2. Browse Samples
-
-- View all samples from a selected evaluation
-- Use the search bar to filter by question text
-- Select multiple samples using checkboxes
-- Click "Compare Selected" to compare samples side-by-side
-- Click any row to view the full trace
-
-### 3. View Trace Details
-
-- See the complete conversation history with proper formatting:
-  - **User messages**: Gray boxes with prompt text
-  - **Reasoning**: Blue collapsible boxes with thinking process
-  - **Code Interpreter**: Green boxes with code and execution output
-  - **Assistant**: White boxes with final response
-- View metadata (cutoff dates, predictions, prices)
-- See all metrics with color coding
-- Add feedback with structured fields
-
-### 4. Add Feedback
-
-In the trace view, scroll to the bottom to find the feedback form:
-
-1. **Feedback Type** (required): Select from predefined types or "Other"
-   - Correct, Incorrect, Interesting, Unclear, Other
-2. **Rating** (optional): 1-5 star rating
-3. **Notes** (optional): Free-form text comments
-4. **Tags** (optional): Comma-separated tags for categorization
-
-### 5. Compare Samples
-
-- From the samples list, select 2-4 samples using checkboxes
-- Click "Compare Selected" button
-- View metrics comparison table
-- See side-by-side conversation traces (first 5 messages)
-- Click "View Full" on any sample to see complete details
-
 ## API Endpoints
 
 ### Evaluation Runs
