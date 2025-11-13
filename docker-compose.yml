@@ -9,7 +9,7 @@ services:
       - SUPABASE_URL=${SUPABASE_URL}
       - SUPABASE_KEY=${SUPABASE_KEY}
       - RESULTS_DIR=/app/results
-      - CORS_ORIGINS=["http://localhost","http://localhost:80","http://localhost:5173"]
+      - CORS_ORIGINS=["http://localhost","http://localhost:80","http://localhost:5173","https://chitchatty-eusebia-momentarily.ngrok-free.dev"]
     volumes:
       - ./results:/app/results
     restart: unless-stopped
