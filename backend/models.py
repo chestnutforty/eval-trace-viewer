@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, TypeVar, Generic
 from pydantic import BaseModel, Field
 from uuid import UUID
 
@@ -145,10 +145,33 @@ class IngestResponse(BaseModel):
     errors: List[str] = Field(default_factory=list)
 
 
-class PaginatedResponse(BaseModel):
+class QuestionSummary(BaseModel):
+    """Model for question summary with aggregated stats."""
+
+    question: str
+    sample_count: int
+    eval_run_count: int
+    latest_timestamp: datetime
+
+
+class SampleWithEvalRun(EvalSample):
+    """Model for evaluation sample with eval run metadata."""
+
+    eval_run_name: str
+    model_name: Optional[str] = None
+    eval_run_timestamp: datetime
+
+
+T = TypeVar('T')
+
+
+class PaginatedResponse(BaseModel, Generic[T]):
     """Generic paginated response."""
 
-    items: List[Any]
+    items: List[T]
     total: int
     offset: int
     limit: int
+
+    class Config:
+        arbitrary_types_allowed = True

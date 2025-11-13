@@ -3,7 +3,7 @@ from fastapi import APIRouter, HTTPException, Query
 from uuid import UUID
 
 from ..database import get_db
-from ..models import EvalSample, PaginatedResponse
+from ..models import EvalSample, PaginatedResponse, QuestionSummary, SampleWithEvalRun
 
 router = APIRouter()
 
@@ -116,6 +116,131 @@ async def compare_samples(ids: List[str] = Query(..., description="List of sampl
 
     samples.sort(key=lambda s: sample_ids.index(str(s.id)))
     return {"samples": samples}
+
+
+@router.get("/questions")
+async def list_questions(
+    offset: int = Query(0, ge=0),
+    limit: int = Query(50, ge=1, le=100),
+    search_query: Optional[str] = None,
+):
+    """List all unique questions with aggregated stats."""
+    db = get_db()
+
+    # Fetch samples with pagination applied to the raw data
+    # We'll aggregate in Python since Supabase doesn't have great GROUP BY support
+    query = db.table("eval_samples").select("question, eval_run_id, created_at")
+
+    if search_query:
+        query = query.ilike("question", f"%{search_query}%")
+
+    # Fetch more than we need to ensure we have enough unique questions after aggregation
+    # This is a compromise - we fetch a larger batch and aggregate in Python
+    fetch_limit = min(1000, (offset + limit) * 10)  # Fetch 10x more to ensure coverage
+    response = query.order("created_at", desc=True).range(0, fetch_limit - 1).execute()
+
+    # Aggregate the results in Python
+    question_stats = {}
+    for row in response.data:
+        q = row["question"]
+        if q not in question_stats:
+            question_stats[q] = {
+                "question": q,
+                "sample_count": 0,
+                "eval_runs": set(),
+                "latest_timestamp": row["created_at"],
+            }
+        question_stats[q]["sample_count"] += 1
+        question_stats[q]["eval_runs"].add(row["eval_run_id"])
+        # Keep the latest timestamp
+        if row["created_at"] > question_stats[q]["latest_timestamp"]:
+            question_stats[q]["latest_timestamp"] = row["created_at"]
+
+    # Convert to list and sort by latest timestamp
+    questions_list = [
+        QuestionSummary(
+            question=stats["question"],
+            sample_count=stats["sample_count"],
+            eval_run_count=len(stats["eval_runs"]),
+            latest_timestamp=stats["latest_timestamp"],
+        )
+        for stats in question_stats.values()
+    ]
+    questions_list.sort(key=lambda x: x.latest_timestamp, reverse=True)
+
+    # Calculate total unique questions
+    total = len(questions_list)
+
+    # Apply pagination to the aggregated results
+    paginated_items = questions_list[offset : offset + limit]
+
+    return {
+        "items": [item.model_dump() for item in paginated_items],
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+    }
+
+
+@router.get("/by-question")
+async def get_samples_by_question(
+    question: str = Query(..., description="Exact question text to search for"),
+    offset: int = Query(0, ge=0),
+    limit: int = Query(100, ge=1, le=200),
+):
+    """Get all samples for a specific question across all eval runs."""
+    db = get_db()
+
+    # Query samples with eval_run join to get run metadata
+    query = (
+        db.table("eval_samples")
+        .select("*, eval_runs!inner(name, model_name, timestamp)")
+        .ilike("question", question)
+    )
+
+    # Get total count
+    count_query = (
+        db.table("eval_samples")
+        .select("*", count="exact", head=True)
+        .ilike("question", question)
+    )
+    total_response = count_query.execute()
+    total = total_response.count if total_response.count else 0
+
+    # Get paginated results ordered by eval_run timestamp descending
+    response = query.order("eval_runs(timestamp)", desc=True).range(offset, offset + limit - 1).execute()
+
+    items = []
+    for row in response.data:
+        eval_run_data = row.get("eval_runs")
+        if not eval_run_data:
+            continue
+
+        items.append(
+            SampleWithEvalRun(
+                id=row["id"],
+                eval_run_id=row["eval_run_id"],
+                sample_index=row["sample_index"],
+                question=row["question"],
+                score=row.get("score"),
+                metrics=row.get("metrics", {}),
+                conversation=row.get("conversation", []),
+                html_report=row.get("html_report"),
+                example_metadata=row.get("example_metadata", {}),
+                created_at=row["created_at"],
+                feedback_count=0,
+                eval_run_name=eval_run_data["name"],
+                model_name=eval_run_data.get("model_name"),
+                eval_run_timestamp=eval_run_data["timestamp"],
+            )
+        )
+
+    return {
+        "items": [item.model_dump() for item in items],
+        "total": total,
+        "offset": offset,
+        "limit": limit,
+    }
 
 
 @router.get("/{sample_id}", response_model=EvalSample)

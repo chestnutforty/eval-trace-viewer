@@ -8,6 +8,8 @@ import type {
   PaginatedResponse,
   EvalRunFilters,
   SampleFilters,
+  QuestionSummary,
+  SampleWithEvalRun,
 } from '../types';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8001';
@@ -74,6 +76,29 @@ export const sampleApi = {
     // Manually construct query string with repeated params: ?ids=uuid1&ids=uuid2
     const queryString = ids.map(id => `ids=${encodeURIComponent(id)}`).join('&');
     const response = await api.get(`/api/samples/compare?${queryString}`);
+    return response.data;
+  },
+
+  listQuestions: async (
+    offset: number = 0,
+    limit: number = 50,
+    searchQuery?: string
+  ): Promise<PaginatedResponse<QuestionSummary>> => {
+    const params: any = { offset, limit };
+    if (searchQuery) {
+      params.search_query = searchQuery;
+    }
+    const response = await api.get('/api/samples/questions', { params });
+    return response.data;
+  },
+
+  getSamplesByQuestion: async (
+    question: string,
+    offset: number = 0,
+    limit: number = 100
+  ): Promise<PaginatedResponse<SampleWithEvalRun>> => {
+    const params = { question, offset, limit };
+    const response = await api.get('/api/samples/by-question', { params });
     return response.data;
   },
 };

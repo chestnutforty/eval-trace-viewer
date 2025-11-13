@@ -88,3 +88,16 @@ export interface SampleFilters {
   max_score?: number;
   metric_filters?: Record<string, Record<string, number>>;
 }
+
+export interface QuestionSummary {
+  question: string;
+  sample_count: number;
+  eval_run_count: number;
+  latest_timestamp: string;
+}
+
+export interface SampleWithEvalRun extends EvalSample {
+  eval_run_name: string;
+  model_name?: string;
+  eval_run_timestamp: string;
+}
