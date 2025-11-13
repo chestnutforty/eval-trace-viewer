@@ -225,42 +225,107 @@ npm run preview
 
 ## Deployment
 
-### Backend (FastAPI)
+### Docker Deployment (Recommended)
 
-**Option 1: Docker**
-```dockerfile
-FROM python:3.10-slim
-WORKDIR /app
-COPY pyproject.toml .
-RUN pip install .
-COPY backend ./backend
-CMD ["uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "8001"]
-```
+The easiest way to deploy the entire application is using Docker Compose:
 
-**Option 2: Railway/Heroku/Render**
-- Set environment variables in platform dashboard
-- Use start command: `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+#### Prerequisites
+- Docker and Docker Compose installed
+- Supabase project created and configured (see Setup section above)
 
-### Frontend (Vite)
+#### Quick Start with Docker
 
-**Option 1: Static Hosting (Vercel/Netlify)**
+1. **Set up environment variables**:
 ```bash
-npm run build
-# Deploy the dist/ directory
+cp .env.example .env
+# Edit .env with your Supabase credentials
 ```
 
-**Option 2: Docker**
-```dockerfile
-FROM node:18 AS builder
-WORKDIR /app
-COPY package*.json ./
-RUN npm install
-COPY . .
-RUN npm run build
-
-FROM nginx:alpine
-COPY --from=builder /app/dist /usr/share/nginx/html
+2. **Build and start the containers**:
+```bash
+docker-compose up -d
 ```
+
+This will:
+- Build and start the backend API on port 8001
+- Build and start the frontend on port 80
+- Set up a Docker network for communication between services
+- Enable automatic restarts
+
+3. **Access the application**:
+- Frontend: `http://localhost` (port 80)
+- Backend API: `http://localhost:8001`
+- API Documentation: `http://localhost:8001/docs`
+
+4. **View logs**:
+```bash
+# All services
+docker-compose logs -f
+
+# Specific service
+docker-compose logs -f frontend
+docker-compose logs -f backend
+```
+
+5. **Stop the application**:
+```bash
+docker-compose down
+```
+
+#### Port Tunneling
+
+To expose the application to the internet (e.g., for sharing with team members):
+
+**Using ngrok**:
+```bash
+# Tunnel the frontend (port 80)
+ngrok http 80
+
+# Or tunnel both services separately
+ngrok http 80    # For frontend
+ngrok http 8001  # For backend API
+```
+
+**Using Cloudflare Tunnel**:
+```bash
+cloudflared tunnel --url http://localhost:80
+```
+
+**Important**: When tunneling, update the `VITE_API_URL` build argument in `docker-compose.yml` to use your public backend URL.
+
+#### Production Deployment
+
+For production deployments, consider:
+
+1. **Use environment-specific configurations**:
+   - Update CORS origins in `.env` to include your production domain
+   - Use HTTPS for both frontend and backend
+   - Set appropriate API URLs in docker-compose.yml
+
+2. **Add SSL/TLS termination**:
+   - Use a reverse proxy like Nginx or Caddy
+   - Or deploy behind a service like Cloudflare
+
+3. **Resource limits** (add to docker-compose.yml):
+```yaml
+services:
+  backend:
+    deploy:
+      resources:
+        limits:
+          cpus: '1'
+          memory: 1G
+```
+
+### Alternative Deployment Options
+
+**Backend (FastAPI)**:
+- Railway/Heroku/Render: Set environment variables and use start command `uvicorn backend.main:app --host 0.0.0.0 --port $PORT`
+- Cloud Run/AWS Lambda: Package as container image
+
+**Frontend (Vite)**:
+- Vercel/Netlify: Build with `npm run build` and deploy the `dist/` directory
+- Static hosting: Serve the built `dist/` directory with any web server
 
 ## Troubleshooting
 

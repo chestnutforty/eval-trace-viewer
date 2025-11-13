@@ -74,10 +74,13 @@ class FeedbackBase(BaseModel):
     tags: List[str] = Field(default_factory=list)
 
 
-class FeedbackCreate(FeedbackBase):
-    """Model for creating feedback."""
+class FeedbackCreate(BaseModel):
+    """Model for creating feedback (sample_id comes from URL path)."""
 
-    pass
+    feedback_type: str
+    rating: Optional[int] = Field(None, ge=1, le=5)
+    notes: Optional[str] = None
+    tags: List[str] = Field(default_factory=list)
 
 
 class FeedbackUpdate(BaseModel):

@@ -37,6 +37,13 @@ export default function TraceView() {
     },
   });
 
+  const deleteFeedbackMutation = useMutation({
+    mutationFn: (feedbackId: string) => feedbackApi.delete(feedbackId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['feedback', sampleId] });
+    },
+  });
+
   const handleSubmitFeedback = (e: React.FormEvent) => {
     e.preventDefault();
     if (!feedbackType) return;
@@ -47,6 +54,12 @@ export default function TraceView() {
       notes: notes || undefined,
       tags: tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : [],
     });
+  };
+
+  const handleDeleteFeedback = (feedbackId: string) => {
+    if (window.confirm('Are you sure you want to delete this feedback?')) {
+      deleteFeedbackMutation.mutate(feedbackId);
+    }
   };
 
   const formatScore = (score: number | undefined) => {
@@ -142,8 +155,18 @@ export default function TraceView() {
         {feedbacks.length > 0 && (
           <div className="mb-6 space-y-3">
             {feedbacks.map((feedback) => (
-              <div key={feedback.id} className="bg-gray-50 rounded-lg p-4 border">
-                <div className="flex justify-between items-start mb-2">
+              <div key={feedback.id} className="bg-gray-50 rounded-lg p-4 border relative">
+                <button
+                  onClick={() => handleDeleteFeedback(feedback.id)}
+                  disabled={deleteFeedbackMutation.isPending}
+                  className="absolute top-3 right-3 p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded transition disabled:opacity-50"
+                  title="Delete feedback"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+                <div className="flex justify-between items-start mb-2 pr-8">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                     {feedback.feedback_type}
                   </span>

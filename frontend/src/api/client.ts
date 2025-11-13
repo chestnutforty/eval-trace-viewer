@@ -84,7 +84,7 @@ export const feedbackApi = {
     return response.data;
   },
 
-  create: async (sampleId: string, data: Omit<FeedbackCreate, 'sample_id'>): Promise<Feedback> => {
+  create: async (sampleId: string, data: FeedbackCreate): Promise<Feedback> => {
     const response = await api.post(`/api/feedback/sample/${sampleId}/feedback`, data);
     return response.data;
   },

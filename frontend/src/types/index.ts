@@ -53,7 +53,6 @@ export interface Feedback {
 }
 
 export interface FeedbackCreate {
-  sample_id: string;
   feedback_type: string;
   rating?: number;
   notes?: string;
