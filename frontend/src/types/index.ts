@@ -1,3 +1,16 @@
+export interface ToolsMetadata {
+  mcp_servers: string[];
+  enable_internal_browser: boolean;
+  enable_internal_python: boolean;
+}
+
+export interface EvalRunMetadata {
+  example_level_metadata?: any[];
+  tools?: ToolsMetadata;
+  developer_message?: string | null;
+  [key: string]: any;
+}
+
 export interface EvalRun {
   id: string;
   name: string;
@@ -6,7 +19,7 @@ export interface EvalRun {
   timestamp: string;
   overall_score?: number;
   metrics: Record<string, number>;
-  metadata: Record<string, any>;
+  metadata: EvalRunMetadata;
   file_path?: string;
   created_at: string;
   sample_count?: number;
