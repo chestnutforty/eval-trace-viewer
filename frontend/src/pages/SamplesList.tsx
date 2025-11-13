@@ -9,6 +9,7 @@ export default function SamplesList() {
   const navigate = useNavigate();
   const [offset, setOffset] = useState(0);
   const [searchQuery, setSearchQuery] = useState('');
+  const [searchInput, setSearchInput] = useState('');
   const [selectedSamples, setSelectedSamples] = useState<string[]>([]);
   const limit = 20;
 
@@ -24,6 +25,11 @@ export default function SamplesList() {
     enabled: !!evalId,
   });
 
+  const handleSearch = () => {
+    setSearchQuery(searchInput);
+    setOffset(0);
+  };
+
   const handleSelectSample = (sampleId: string) => {
     setSelectedSamples(prev =>
       prev.includes(sampleId) ? prev.filter(id => id !== sampleId) : [...prev, sampleId]
@@ -32,7 +38,8 @@ export default function SamplesList() {
 
   const handleCompare = () => {
     if (selectedSamples.length >= 2) {
-      navigate(`/compare?ids=${selectedSamples.join(',')}`);
+      const queryString = selectedSamples.map(id => `ids=${id}`).join('&');
+      navigate(`/compare?${queryString}`);
     }
   };
 
@@ -79,16 +86,26 @@ export default function SamplesList() {
       </div>
 
       <div className="flex justify-between items-center gap-4">
-        <input
-          type="text"
-          placeholder="Search questions..."
-          value={searchQuery}
-          onChange={(e) => {
-            setSearchQuery(e.target.value);
-            setOffset(0);
-          }}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-        />
+        <div className="flex-1 flex gap-2">
+          <input
+            type="text"
+            placeholder="Search questions..."
+            value={searchInput}
+            onChange={(e) => setSearchInput(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                handleSearch();
+              }
+            }}
+            className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+          />
+          <button
+            onClick={handleSearch}
+            className="px-4 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition"
+          >
+            Search
+          </button>
+        </div>
         <button
           onClick={handleCompare}
           disabled={selectedSamples.length < 2}
@@ -98,7 +115,7 @@ export default function SamplesList() {
         </button>
       </div>
 
-      <div className="bg-white shadow-sm rounded-lg border overflow-hidden">
+      <div className="bg-white shadow-sm rounded-lg border overflow-hidden overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>

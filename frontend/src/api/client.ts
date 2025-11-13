@@ -71,9 +71,9 @@ export const sampleApi = {
   },
 
   compare: async (ids: string[]): Promise<{ samples: EvalSample[] }> => {
-    const response = await api.get('/api/samples/compare', {
-      params: { ids: ids.join(',') },
-    });
+    // Manually construct query string with repeated params: ?ids=uuid1&ids=uuid2
+    const queryString = ids.map(id => `ids=${encodeURIComponent(id)}`).join('&');
+    const response = await api.get(`/api/samples/compare?${queryString}`);
     return response.data;
   },
 };

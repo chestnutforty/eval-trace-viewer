@@ -124,9 +124,15 @@ export default function TraceView() {
       <div className="bg-white rounded-lg shadow-sm border p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Conversation Trace</h3>
         <div className="space-y-4">
-          {sample.conversation.map((message, idx) => (
-            <MessageRenderer key={idx} message={message} />
-          ))}
+          {sample.conversation
+            .filter((message) => {
+              // Filter out messages with type="message" to avoid duplicates
+              // These are typically duplicated as plain assistant messages
+              return message.type !== 'message';
+            })
+            .map((message, idx) => (
+              <MessageRenderer key={idx} message={message} />
+            ))}
         </div>
       </div>
 

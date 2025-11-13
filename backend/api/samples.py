@@ -64,6 +64,60 @@ async def list_samples_for_eval(
     return PaginatedResponse(items=items, total=total, offset=offset, limit=limit)
 
 
+@router.get("/compare")
+async def compare_samples(ids: List[str] = Query(..., description="List of sample IDs to compare")):
+    """Compare multiple samples side-by-side."""
+    db = get_db()
+
+    sample_ids = [id.strip() for id in ids if id.strip()]
+
+    if len(sample_ids) < 2:
+        raise HTTPException(
+            status_code=400, detail="At least 2 sample IDs required for comparison"
+        )
+    if len(sample_ids) > 4:
+        raise HTTPException(
+            status_code=400, detail="Maximum 4 samples can be compared at once"
+        )
+
+    # Validate UUIDs
+    try:
+        for sample_id in sample_ids:
+            UUID(sample_id)
+    except ValueError as e:
+        raise HTTPException(
+            status_code=400, detail=f"Invalid UUID format: {str(e)}"
+        )
+
+    response = db.table("eval_samples").select("*").in_("id", sample_ids).execute()
+
+    if len(response.data) != len(sample_ids):
+        raise HTTPException(
+            status_code=404, detail="One or more samples not found"
+        )
+
+    samples = []
+    for row in response.data:
+        samples.append(
+            EvalSample(
+                id=row["id"],
+                eval_run_id=row["eval_run_id"],
+                sample_index=row["sample_index"],
+                question=row["question"],
+                score=row.get("score"),
+                metrics=row.get("metrics", {}),
+                conversation=row.get("conversation", []),
+                html_report=row.get("html_report"),
+                example_metadata=row.get("example_metadata", {}),
+                created_at=row["created_at"],
+                feedback_count=0,
+            )
+        )
+
+    samples.sort(key=lambda s: sample_ids.index(str(s.id)))
+    return {"samples": samples}
+
+
 @router.get("/{sample_id}", response_model=EvalSample)
 async def get_sample(sample_id: UUID):
     """Get a single sample with full conversation trace."""
@@ -95,48 +149,3 @@ async def get_sample(sample_id: UUID):
         created_at=row["created_at"],
         feedback_count=feedback_count,
     )
-
-
-@router.get("/compare")
-async def compare_samples(ids: str = Query(..., description="Comma-separated sample IDs")):
-    """Compare multiple samples side-by-side."""
-    db = get_db()
-
-    sample_ids = [id.strip() for id in ids.split(",")]
-
-    if len(sample_ids) < 2:
-        raise HTTPException(
-            status_code=400, detail="At least 2 sample IDs required for comparison"
-        )
-    if len(sample_ids) > 4:
-        raise HTTPException(
-            status_code=400, detail="Maximum 4 samples can be compared at once"
-        )
-
-    response = db.table("eval_samples").select("*").in_("id", sample_ids).execute()
-
-    if len(response.data) != len(sample_ids):
-        raise HTTPException(
-            status_code=404, detail="One or more samples not found"
-        )
-
-    samples = []
-    for row in response.data:
-        samples.append(
-            EvalSample(
-                id=row["id"],
-                eval_run_id=row["eval_run_id"],
-                sample_index=row["sample_index"],
-                question=row["question"],
-                score=row.get("score"),
-                metrics=row.get("metrics", {}),
-                conversation=row.get("conversation", []),
-                html_report=row.get("html_report"),
-                example_metadata=row.get("example_metadata", {}),
-                created_at=row["created_at"],
-                feedback_count=0,
-            )
-        )
-
-    samples.sort(key=lambda s: sample_ids.index(str(s.id)))
-    return {"samples": samples}

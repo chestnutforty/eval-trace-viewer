@@ -1,4 +1,6 @@
-import { useState } from 'react';
+import { useState, type ReactNode } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import type { Message } from '../types';
 
 interface MessageRendererProps {
@@ -33,6 +35,39 @@ function extractText(content: any): string {
 
   // Fallback: stringify the content
   return JSON.stringify(content);
+}
+
+// Helper function to render code interpreter output
+function renderOutput(output: any): ReactNode {
+  if (!output) return null;
+
+  // If output is a string, return it directly
+  if (typeof output === 'string') {
+    return <pre className="whitespace-pre-wrap font-mono">{output}</pre>;
+  }
+
+  // If output has a 'logs' field, display it
+  if (output && typeof output === 'object' && 'logs' in output) {
+    return <pre className="whitespace-pre-wrap font-mono">{output.logs}</pre>;
+  }
+
+  // If output has other specific fields, try to render them nicely
+  if (output && typeof output === 'object') {
+    // For objects with type field, show the relevant content
+    if (output.type === 'logs' && output.logs) {
+      return <pre className="whitespace-pre-wrap font-mono">{output.logs}</pre>;
+    }
+    if (output.type === 'error' && output.message) {
+      return <pre className="whitespace-pre-wrap font-mono text-red-600">{output.message}</pre>;
+    }
+    // For image outputs or other data, try to display appropriately
+    if (output.type === 'image' && output.data) {
+      return <img src={output.data} alt="Output" className="max-w-full" />;
+    }
+  }
+
+  // Fallback: stringify the output with nice formatting
+  return <pre className="whitespace-pre-wrap font-mono text-xs">{JSON.stringify(output, null, 2)}</pre>;
 }
 
 export default function MessageRenderer({ message }: MessageRendererProps) {
@@ -95,8 +130,8 @@ export default function MessageRenderer({ message }: MessageRendererProps) {
             <div className="text-xs text-gray-600 mb-1">Output:</div>
             <div className="bg-white p-3 rounded border border-green-300 text-xs">
               {message.outputs.map((output: any, idx: number) => (
-                <div key={idx} className="whitespace-pre-wrap">
-                  {JSON.stringify(output, null, 2)}
+                <div key={idx}>
+                  {renderOutput(output)}
                 </div>
               ))}
             </div>
@@ -114,7 +149,9 @@ export default function MessageRenderer({ message }: MessageRendererProps) {
     return (
       <div className="bg-white rounded-lg p-4 border border-gray-300">
         <div className="text-xs font-semibold text-gray-500 uppercase mb-2">Assistant</div>
-        <div className="text-sm text-gray-800 whitespace-pre-wrap">{assistantText}</div>
+        <div className="text-sm text-gray-800 prose prose-sm max-w-none">
+          <ReactMarkdown remarkPlugins={[remarkGfm]}>{assistantText}</ReactMarkdown>
+        </div>
       </div>
     );
   }

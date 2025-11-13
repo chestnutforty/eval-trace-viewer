@@ -6,7 +6,7 @@ import MessageRenderer from '../components/MessageRenderer';
 export default function ComparisonView() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const ids = searchParams.get('ids')?.split(',') || [];
+  const ids = searchParams.getAll('ids');
 
   const { data, isLoading, error } = useQuery({
     queryKey: ['compare', ids],
