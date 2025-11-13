@@ -18,7 +18,7 @@ RUN uv sync --frozen --no-dev
 COPY backend ./backend
 
 # Expose port
-EXPOSE 8001
+EXPOSE 7001
 
 # Run the application
 CMD ["uv", "run", "uvicorn", "backend.main:app", "--host", "0.0.0.0", "--port", "7001"]

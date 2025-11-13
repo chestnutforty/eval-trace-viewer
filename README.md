@@ -1,6 +1,6 @@
 # Eval Trace Viewer
 
-A lightweight web application for exploring evaluation traces and providing feedback on model outputs. Built with FastAPI (backend) and React + Vite (frontend), using Supabase for persistent storage.
+Web application for exploring evaluation traces and providing feedback on model outputs. Built with FastAPI (backend) and React + Vite (frontend), using Supabase for persistent storage.
 
 ## Features
 
