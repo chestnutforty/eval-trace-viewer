@@ -14,7 +14,7 @@ export default function QuestionDetailPage() {
   const [expandedRuns, setExpandedRuns] = useState<Set<string>>(new Set());
   const limit = 100;
 
-  const { data, isLoading, error, fetchNextPage, hasNextPage, isFetchingNextPage } = useQuery({
+  const { data, isLoading, error } = useQuery({
     queryKey: ['samples-by-question', question, offset, limit],
     queryFn: () => sampleApi.getSamplesByQuestion(question, offset, limit),
     enabled: !!question,
